@@ -1,4 +1,4 @@
-package ch3_stack_queue;
+package ch3_stack_queue.queu_via_stack;
 
 import java.util.NoSuchElementException;
 

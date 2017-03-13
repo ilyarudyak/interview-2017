@@ -1,5 +1,6 @@
 package ch3_stack_queue;
 
+import ch3_stack_queue.queu_via_stack.QueueViaStack;
 import org.junit.jupiter.api.BeforeEach;
 
 import static org.junit.jupiter.api.Assertions.*;

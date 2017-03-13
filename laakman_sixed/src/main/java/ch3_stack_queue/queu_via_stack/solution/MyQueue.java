@@ -1,4 +1,4 @@
-package ch3_stack_queue.solution;
+package ch3_stack_queue.queu_via_stack.solution;
 
 import java.util.Stack;
 
