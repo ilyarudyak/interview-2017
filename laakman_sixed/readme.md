@@ -1,4 +1,14 @@
 ## chapter 3. Stack and queue
+### 3.2 Stack with min in O(1)
+* my ideas: augment stack - push pairs `(v, min)`, where min is current `min`;
+ this `min` is also the `min` **below** `v`;
+```
+// min == 2 and we push 3
+push Pair(3, 2); 
+// min == 2 and we push 1
+push Pair(1, 2);
+```
+
 ### 3.4 Queue via stack
 * my ideas: (a) we have 2 stacks - say `left` and `right`; we push elements
 into `left` stack until first `dequeue` request; (b) then we move elements into 
