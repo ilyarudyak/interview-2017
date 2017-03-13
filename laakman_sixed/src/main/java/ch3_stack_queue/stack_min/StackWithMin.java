@@ -7,18 +7,25 @@ public class StackWithMin<Item extends Comparable<Item>> implements Iterable<Ite
 
     private Node<Item> top;
     private int n;
-    private Item currentMin;
+    Item currentMin;
+
+    public StackWithMin() {
+        this.top = null;
+        this.n = 0;
+        this.currentMin = null;
+    }
 
     public void push(Item item) {
         Node<Item> oldTop = top;
         top = new Node<Item>(new Pair<Item>(item, currentMin), oldTop);
         top.next = oldTop;
-        updateMin(item);
+        updateMinPush(item);
         n++;
     }
     public Item pop() {
         if (isEmpty()) throw new NoSuchElementException("Stack underflow");
         Item item = top.itemPair.item;
+        updateMinPop(top.itemPair);
         top = top.next;
         n--;
         return item;
@@ -42,9 +49,19 @@ public class StackWithMin<Item extends Comparable<Item>> implements Iterable<Ite
         return new StackWithMinIterator<Item>(top);
     }
 
-    private void updateMin(Item item) {
-        if (isEmpty() || currentMin.compareTo(item) > 0) {
+    private void updateMinPush(Item item) {
+        if (currentMin == null) {
             currentMin = item;
+            return;
+        }
+
+        if (currentMin.compareTo(item) > 0) {
+            currentMin = item;
+        }
+    }
+    private void updateMinPop(Pair<Item> itemPair) {
+        if (currentMin.compareTo(itemPair.item) == 0) {
+            currentMin = itemPair.minBelow;
         }
     }
 
