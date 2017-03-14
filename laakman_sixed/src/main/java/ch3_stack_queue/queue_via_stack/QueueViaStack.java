@@ -1,5 +1,7 @@
 package ch3_stack_queue.queue_via_stack;
 
+import ch3_stack_queue.princeton.StackPrinceton;
+
 import java.util.NoSuchElementException;
 
 /**

@@ -1,4 +1,4 @@
-package ch3_stack_queue.queue_via_stack;
+package ch3_stack_queue.princeton;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
