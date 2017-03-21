@@ -1,4 +1,4 @@
-## chapter 3. Stack and queue
+## chapter 3. Stack and queue (3/6)
 ### 3.2 Stack with min in O(1)
 * my ideas: augment stack - push pairs `(v, min)`, where min is current `min`;
  this `min` is also the `min` **below** `v`;
@@ -21,4 +21,30 @@ stack;
 * solution: this is basically identical with what we have in solution; Laakman talks about
 key difference between stack and queue; so we can reverse order using the second
 stack; she also calls our approach to leave elements in the second stack as "lazy";
+
 ### 3.5 Sort stack using additional stack
+* solution: use analog of insertion sort; suppose we have 2 stacks: `left` and `right`;
+`right` is sorted; (a) to move element `x` from `left` to `right` we pop from `right`
+until they are less than `x` (and store them in `left`); (b) then push `x` to right; 
+(c) we repeat this - so elements moved on step `a` will be above `x` in `right`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
