@@ -28,6 +28,10 @@ stack; she also calls our approach to leave elements in the second stack as "laz
 until they are less than `x` (and store them in `left`); (b) then push `x` to right; 
 (c) we repeat this - so elements moved on step `a` will be above `x` in `right`;
 
+### 3.6 Animal Shelter
+* solution: maintain cats and dogs (2 queues); augment cats and dogs with timestamp; 
+when we need `dequeueAll()` - peek from these queues and compare timestamps; 
+
 
 
 
