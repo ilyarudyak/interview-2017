@@ -1,4 +1,4 @@
-package liang;
+package liang.intro;
 
 /**
  * Created by ilyarudyak on 3/27/17.
