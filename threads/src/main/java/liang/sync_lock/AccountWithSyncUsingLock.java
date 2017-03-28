@@ -1,4 +1,4 @@
-package liang.sync;
+package liang.sync_lock;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
