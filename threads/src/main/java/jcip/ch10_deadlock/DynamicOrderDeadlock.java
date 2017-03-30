@@ -16,8 +16,6 @@ import java.util.stream.Stream;
  */
 public class DynamicOrderDeadlock {
 
-    private static final Object tieLock = new Object();
-
     private static final int NUM_THREADS = 20;
     private static final int NUM_ACCOUNTS = 5;
     private static final int NUM_ITERATIONS = 1_000_000;
@@ -30,54 +28,6 @@ public class DynamicOrderDeadlock {
                     fromAccount.debit(amount);
                     toAccount.credit(amount);
                 } catch (InsufficientFundsException e) {
-                }
-            }
-        }
-    }
-
-    public static void transferMoneyThreadSafe(final Account fromAccount, final Account toAccount, DollarAmount amount) {
-
-        class Helper {
-            public void transfer() {
-                try {
-                    fromAccount.debit(amount);
-                    toAccount.credit(amount);
-                } catch (InsufficientFundsException e) {
-                }
-            }
-        }
-
-        int fromHash = System.identityHashCode(fromAccount);
-        int toHash = System.identityHashCode(toAccount);
-
-        synchronized (fromAccount) {
-            synchronized (toAccount) {
-                try {
-                    fromAccount.debit(amount);
-                    toAccount.credit(amount);
-                } catch (InsufficientFundsException e) {
-                }
-            }
-        }
-
-        if (fromHash < toHash) {
-            synchronized (fromAccount) {
-                synchronized (toAccount) {
-                    new Helper().transfer();
-                }
-            }
-        } else if (fromHash > toHash) {
-            synchronized (toAccount) {
-                synchronized (fromAccount) {
-                    new Helper().transfer();
-                }
-            }
-        } else {
-            synchronized (tieLock) {
-                synchronized (fromAccount) {
-                    synchronized (toAccount) {
-                        new Helper().transfer();
-                    }
                 }
             }
         }
@@ -183,25 +133,6 @@ public class DynamicOrderDeadlock {
 
     }
 
-    public static void safeExecution() throws InterruptedException {
-        final Random rnd = new Random(Instant.now().getEpochSecond());
-        List<Account> accounts = Stream.generate(() -> new Account(100))
-                .limit(NUM_ACCOUNTS)
-                .collect(Collectors.toList());
-
-        ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
-        List<Runnable> tasks = Stream.generate(() -> buildTransferTaskThreadSafe(accounts, rnd))
-                .limit(NUM_ITERATIONS)
-                .collect(Collectors.toList());
-
-        tasks.forEach(executor::execute);
-        executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
-
-        System.out.println(accounts);
-
-    }
-
     private static Runnable buildTransferTask(List<Account> accounts, Random rnd) {
         return new Runnable() {
             @Override
@@ -214,21 +145,8 @@ public class DynamicOrderDeadlock {
         };
     }
 
-    private static Runnable buildTransferTaskThreadSafe(List<Account> accounts, Random rnd) {
-        return new Runnable() {
-            @Override
-            public void run() {
-                Account A = accounts.get(rnd.nextInt(NUM_ACCOUNTS));
-                Account B = accounts.get(rnd.nextInt(NUM_ACCOUNTS));
-                DollarAmount amount = new DollarAmount(1);
-                transferMoneyThreadSafe(A, B, amount);
-            }
-        };
-    }
-
     public static void main(String[] args) throws InsufficientFundsException, InterruptedException {
-//        realDeadlock();
-        safeExecution();
+        realDeadlock();
     }
 }
 
