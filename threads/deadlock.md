@@ -16,7 +16,8 @@ the left (**deadlock**);
 * We have 2 examples from JCIP: (a) in the first example we have methods that 
 acquire lock in **different** order; if we call these methods from different 
 threads and requests to lock are interleaved we'll get deadlock; (b) in the second
-example we have only one method; problems can be cause by **calls** of this method:
+example we have only one method; problems can be cause by **calls** of this method
+(we need multiple calls to get this lock and we have an example code to do this):
 ```
 public static void transferMoney(Account fromAccount,
                                  Account toAccount,
@@ -33,6 +34,40 @@ public static void transferMoney(Account fromAccount,
         }
     }
     
-Thread A: transferMoney(myAccount, yourAccount, 10);
-Thread B: transferMoney(yourAccount, myAccount, 20);
+Thread A: transferMoney(account #3, account #4, 10);
+Thread B: transferMoney(account #4, account #3, 20);
 ```
+* to get rid of this latter deadlock we have to provide ordering (here we use
+hash code but we can also use account number in our example):
+```
+if (fromHash < toHash) { 
+    synchronized (fromAcct) {
+        synchronized (toAcct) {
+            new Helper().transfer();
+        } 
+    }
+} else  { 
+    synchronized (toAcct) {
+        synchronized (fromAcct) { 
+            new Helper().transfer();
+        } 
+    }
+}
+```
+* so `Thread A` locks `account #3` and now `Thread B` can not lock this account - 
+it has to **wait** (like in this story with philosophers);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

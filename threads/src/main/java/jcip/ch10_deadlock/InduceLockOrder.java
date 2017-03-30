@@ -13,7 +13,6 @@ import java.util.stream.Stream;
  * Created by ilyarudyak on 3/30/17.
  */
 public class InduceLockOrder {
-    private static final Object tieLock = new Object();
 
     private static final int NUM_THREADS = 20;
     private static final int NUM_ACCOUNTS = 5;
@@ -28,21 +27,11 @@ public class InduceLockOrder {
                     toAccount.credit(amount);
                 } catch (DynamicOrderDeadlock.InsufficientFundsException e) {
                 }
-            }
-        }
-
-        int fromHash = System.identityHashCode(fromAccount);
-        int toHash = System.identityHashCode(toAccount);
-
-        synchronized (fromAccount) {
-            synchronized (toAccount) {
-                try {
-                    fromAccount.debit(amount);
-                    toAccount.credit(amount);
-                } catch (DynamicOrderDeadlock.InsufficientFundsException e) {
                 }
-            }
         }
+
+        int fromHash = fromAccount.hashCode();
+        int toHash = toAccount.hashCode();
 
         if (fromHash < toHash) {
             synchronized (fromAccount) {
@@ -50,18 +39,10 @@ public class InduceLockOrder {
                     new Helper().transfer();
                 }
             }
-        } else if (fromHash > toHash) {
+        } else  {
             synchronized (toAccount) {
                 synchronized (fromAccount) {
                     new Helper().transfer();
-                }
-            }
-        } else {
-            synchronized (tieLock) {
-                synchronized (fromAccount) {
-                    synchronized (toAccount) {
-                        new Helper().transfer();
-                    }
                 }
             }
         }
@@ -77,6 +58,7 @@ public class InduceLockOrder {
         List<Runnable> tasks = Stream.generate(() -> buildTransferTaskThreadSafe(accounts, rnd))
                 .limit(NUM_ITERATIONS)
                 .collect(Collectors.toList());
+
 
         tasks.forEach(executor::execute);
         executor.shutdown();
@@ -96,6 +78,10 @@ public class InduceLockOrder {
                 transferMoneyThreadSafe(A, B, amount);
             }
         };
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        safeExecution();
     }
 
 }
