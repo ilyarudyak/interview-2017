@@ -57,8 +57,28 @@ if (fromHash < toHash) {
 * so `Thread A` locks `account #3` and now `Thread B` can not lock this account - 
 it has to **wait** (like in this story with philosophers);
 
+### From 6.005 course
+* We have an example where we can simulate deadlock when one thread is having lock
+on one object and waiting for lock on the other (vise versa for the second thread);
 
+* We may solve this problem with: (a) ordering of locks (in our example by ordering 
+names of `Wizards` instead of hash codes); (b) locking on some other object:
 
+```java
+public class Wizard {
+    private final Castle castle;
+    private final String name;
+    private final Set<Wizard> friends;
+    //...
+    public void friend(Wizard that) {
+        synchronized (castle) {
+            if (this.friends.add(that)) {
+                that.friend(this);
+            }
+        }
+    }
+}
+```
 
 
 
