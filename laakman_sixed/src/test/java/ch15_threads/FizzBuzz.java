@@ -1,99 +1,81 @@
 package ch15_threads;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
- *  In the classic problem FizzBuzz, you are told to print the numbers from 1 to n.
- *  However, when the number is divisible by 3, print "Fizz': When it is divisible
- *  by 5, print "Buzz': When it is divisible by 3 and 5, print "FizzBuzz':
- *  In this problem, you are asked to do this in a multithreaded way.
- *  Implement a multithreaded version of FizzBuzz with four threads.
- *  One thread checks for divisibility of 3 and prints "Fizz': Another thread is
- *  responsible for divisibility of 5 and prints "Buzz': A third thread is responsible
- *  for divisibility of 3 and 5 and prints "FizzBuzz". A fourth thread does the numbers.
+ * Created by ilyarudyak on 4/2/17.
  */
-public class FizzBuzz {
+public class FizzBuzz2 {
 
-    private List<Integer> numbers;
-    private AtomicInteger index;
-    private AtomicInteger N;
-    private Lock numbersLock;
-    private Condition checkNumberCondition;
-
-    public FizzBuzz(int n) {
-        N = new AtomicInteger(n);
-        numbers = Collections.synchronizedList(
-                Stream.iterate(1, x -> x + 1)
-                        .limit(N.intValue())
-                        .collect(Collectors.toList())
-        );
-        index = new AtomicInteger(0);
-        numbersLock = new ReentrantLock();
-        checkNumberCondition = numbersLock.newCondition();
-    }
-
-    public void printNumbers() {
-        numbersLock.lock();
-
-        try {
-            while (index.intValue() < N.intValue()) {
-                System.out.print(numbers.get(index.intValue()) + " ");
-                checkNumberCondition.await();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        numbersLock.unlock();
-    }
-
-    public void checkDiv3PrintFizz() {
-        numbersLock.lock();
-        if (numbers.get(index.intValue()) % 3 == 0) {
-            System.out.println("Fizz");
-        } else {
-            System.out.println();
-        }
-        index.incrementAndGet();
-        checkNumberCondition.signal();
-        numbersLock.unlock();
-    }
+    private static NumberPrinter np = new NumberPrinter();
 
     public static void main(String[] args) {
-        FizzBuzz fb = new FizzBuzz(10);
-        new Thread(() -> {
-                while (fb.index.intValue() < fb.N.intValue()) {
-                    fb.printNumbers();
+
+        Runnable printTask = () -> {
+            while (true) {
+                np.printNumber();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-        }).start();
-        new Thread(() -> {
-            while (fb.index.intValue() < fb.N.intValue()) {
-                fb.checkDiv3PrintFizz();
             }
-        }).start();
+        };
+        Runnable checkTask = () -> {
+            while (true) {
+                np.checkNumber();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        new Thread(printTask).start();
+        new Thread(checkTask).start();
+
+    }
+
+    private static class NumberPrinter {
+
+        private Lock lock = new ReentrantLock();
+        private Condition checkNumber = lock.newCondition();
+        private Integer number = 0;
+
+        public void printNumber() {
+            lock.lock();
+            try {
+                while (true) {
+                    System.out.print(number + " ");
+                    checkNumber.await();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public void checkNumber() {
+            lock.lock();
+            try {
+                if (number % 3 == 0 && number % 5 == 0) {
+                    System.out.println("FizzBuzz");
+                } else if (number % 3 == 0) {
+                    System.out.println("Fizz");
+                } else if (number % 5 == 0) {
+                    System.out.println("Buzz");
+                } else {
+                    System.out.println();
+                }
+                number++;
+                checkNumber.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
