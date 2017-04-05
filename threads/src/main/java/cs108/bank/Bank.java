@@ -25,14 +25,20 @@ import java.util.stream.Stream;
  */
 public class Bank {
 
-    private static Integer BANK_ACCOUNTS = 20;
-    private static Integer INITIAL_BALANCE = 1000;
-    private static Integer CAPACITY = 10;
-    private static Integer TRANS_THREADS = 5;
+    protected static Integer BANK_ACCOUNTS = 20;
+    protected static Integer INITIAL_BALANCE = 1000;
+    protected static Integer CAPACITY = 10;
+    protected static Integer TRANS_THREADS = 5;
 
-    private List<Account> accounts;
-    private List<Transaction> transactions;
-    private BlockingQueue<Transaction> queue;
+    protected List<Account> accounts;
+    protected List<Transaction> transactions;
+    protected BlockingQueue<Transaction> queue;
+
+    public Bank() {
+        accounts = new CopyOnWriteArrayList<>();
+        transactions = new CopyOnWriteArrayList<>();
+        queue = new ArrayBlockingQueue<>(CAPACITY);
+    }
 
     public Bank(String fileName) {
         accounts = new CopyOnWriteArrayList(Stream.iterate(0, n -> n + 1)
@@ -91,13 +97,13 @@ public class Bank {
 
         try {
             bankThread.join();
-//            accounts.forEach(System.out::println);
+            accounts.forEach(System.out::println);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    public synchronized void transferFunds(Transaction t) {
+    public void transferFunds(Transaction t) {
         accounts.get(t.getFromAccountId()).withdraw(t.getAmount());
         accounts.get(t.getToAccountId()).deposit(t.getAmount());
     }
