@@ -6,7 +6,9 @@ import cs108.bank.Transaction;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Now we're using CountDown latch.
+ * Now
+ * (1) we're using CountDown latch;
+ * (2) add 5 dummy transactions;
  */
 public class BankWithLatch extends Bank {
 
@@ -14,6 +16,9 @@ public class BankWithLatch extends Bank {
 
     public BankWithLatch(String fileName) {
         super(fileName);
+        for (int i = 0; i < TRANS_THREADS; i++) {
+            transactions.add(Transaction.buildNullTransaction());
+        }
     }
 
     @Override
@@ -44,7 +49,6 @@ public class BankWithLatch extends Bank {
                     while (!done) {
                         Transaction t = queue.take();
                         if (t.isNullTransaction()) {
-                            queue.put(t);
                             endGate.countDown();
                             done = true;
                         } else {
