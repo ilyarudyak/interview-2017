@@ -20,6 +20,18 @@ public class Account {
         this.transCount = new AtomicInteger(0);
     }
 
+    public Integer getId() {
+        return id;
+    }
+
+    public AtomicInteger getBalance() {
+        return balance;
+    }
+
+    public AtomicInteger getTransCount() {
+        return transCount;
+    }
+
     public void deposit(Integer amount) {
         balance.addAndGet(amount);
         transCount.incrementAndGet();

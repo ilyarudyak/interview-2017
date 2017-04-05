@@ -1,19 +1,27 @@
 package cs108.bank;
 
+import cs108.bank.Account;
+import cs108.bank.Transaction;
+
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Created by ilyarudyak on 4/5/17.
+ * This class is based on example from "Core Java":
+ * BlockingQueueTest from ch. 14:
+ * (1) we don't use CountDown latch here, we simply call join()
+ * on banking thread;
+ * (2) we also use only 1 dummy value (nullTrans), not TRANS_THREADS;
+ * (3) we use flag to stop the Runnable;
  */
 public class Bank {
 
@@ -21,84 +29,78 @@ public class Bank {
     private static Integer INITIAL_BALANCE = 1000;
     private static Integer CAPACITY = 10;
     private static Integer TRANS_THREADS = 5;
-    private static AtomicInteger counter = new AtomicInteger(0);
 
     private List<Account> accounts;
     private List<Transaction> transactions;
-    private BlockingQueue<Transaction> transBQ;
-    private CountDownLatch latch = new CountDownLatch(TRANS_THREADS);
+    private BlockingQueue<Transaction> queue;
 
     public Bank(String fileName) {
-        accounts = Stream.iterate(0, n -> n + 1)
+        accounts = new CopyOnWriteArrayList(Stream.iterate(0, n -> n + 1)
                 .limit(BANK_ACCOUNTS)
                 .map(n -> new Account(n, INITIAL_BALANCE))
-                .collect(Collectors.toList());
-        accounts = Collections.synchronizedList(accounts);
+                .collect(Collectors.toList())
+        );
         try {
-            transactions = Files.lines(Paths.get(fileName))
+            transactions = new CopyOnWriteArrayList(Files.lines(Paths.get(fileName))
                     .map(line -> new Transaction(line))
-                    .collect(Collectors.toList());
-            for (int i = 0; i < TRANS_THREADS; i++) {
-                transactions.add(Transaction.buildNullTransaction());
-            }
-            transactions = Collections.synchronizedList(transactions);
+                    .collect(Collectors.toList()));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        transBQ = new ArrayBlockingQueue<>(CAPACITY);
+        queue = new ArrayBlockingQueue<>(CAPACITY);
     }
 
-    public synchronized void executeTrans(Transaction t) {
-        System.out.println(t + " " + counter.incrementAndGet());
-        accounts.get(t.getFromAccountId()).withdraw(t.getAmount());
-        accounts.get(t.getToAccountId()).deposit(t.getAmount());
-    }
+    public void processTrans() {
 
-    public void processFile() {
-
-        for (int i = 0; i < TRANS_THREADS; i++) {
-            Runnable executeTransTask = () -> {
+        Runnable producer = () -> {
+            for(Transaction t: transactions) {
                 try {
-                    boolean done = false;
-                    while (!done) {
-                        Transaction t = transBQ.take();
-//                        System.out.println(t);
-                        if (t.isNullTransaction()) {
-                            System.out.println("NULL TRANSACTION!!!!!!!!!!!!!");
-                            latch.countDown();
-                            done = true;
-                        } else {
-                            executeTrans(t);
-                        }
-                    }
+                    queue.put(t);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-            };
-            new Thread(executeTransTask).start();
-        }
-        new Thread(putTransTask).start();
-    }
-
-    Runnable putTransTask = () -> {
-        for (Transaction t : transactions) {
-            System.out.println(t);
+            }
             try {
-                transBQ.put(t);
+                queue.put(Transaction.buildNullTransaction());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        };
+
+        Thread bankThread = new Thread(producer);
+        bankThread.start();
+
+        for (int i = 0; i < TRANS_THREADS; i++) {
+            Runnable consumer = () -> {
+                try {
+                    boolean done = false;
+                    while (!done) {
+                        Transaction t = queue.take();
+                        if (t.isNullTransaction()) {
+                            queue.put(t);
+                            done = true;
+                        } else {
+                            transferFunds(t);
+                        }
+                    }
+                }  catch (InterruptedException e) {
+                }
+            };
+            new Thread(consumer).start();
         }
-//        try {
-//            latch.await();
-//            System.out.println(accounts.size());
-//            for(Account a : accounts) {
-//                System.out.println(a);
-//            }
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-    };
+
+        try {
+            bankThread.join();
+//            accounts.forEach(System.out::println);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized void transferFunds(Transaction t) {
+        accounts.get(t.getFromAccountId()).withdraw(t.getAmount());
+        accounts.get(t.getToAccountId()).deposit(t.getAmount());
+    }
 
     public List<Account> getAccounts() {
         return accounts;
@@ -108,7 +110,30 @@ public class Bank {
         return transactions;
     }
 
-    public BlockingQueue<Transaction> getTransBQ() {
-        return transBQ;
+    public BlockingQueue<Transaction> getQueue() {
+        return queue;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
