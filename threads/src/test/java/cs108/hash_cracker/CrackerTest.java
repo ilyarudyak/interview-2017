@@ -31,6 +31,11 @@ public class CrackerTest {
         assertEquals("34800e15707fae815d7c90d49de44aca97e2d759", cracker.getHash("a!"));
         assertEquals("66b27417d37e024c46526c2f6d358a754fc552f3", cracker.getHash("xyz"));
     }
+
+    @Test
+    public void crackPassSimple() throws Exception {
+        cracker.crackPass("adeb6f2a18fe33af368d91b09587b68e3abcb9a7");
+    }
 }
 
 

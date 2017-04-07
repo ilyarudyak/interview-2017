@@ -1,23 +1,35 @@
 package cs108.hash_cracker;
 
+import org.omg.PortableServer.THREAD_POLICY_ID;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
  * Created by ilyarudyak on 4/7/17.
  */
 public class Cracker {
-    // Array of chars used to produce strings
+
+    private static final Integer CRACKER_THREADS = 8;
+    private static final Integer PASSWORD_LENGTH = 2;
     static final List<Character> CHARS = new CopyOnWriteArrayList<>(
             "abcdefghijklmnopqrstuvwxyz0123456789.,-!"
             .chars()
             .mapToObj(c -> (char) c)
             .collect(Collectors.toList())
     );
+    private static CountDownLatch endGate;
+
+    public Cracker() {
+        endGate = new CountDownLatch(CRACKER_THREADS);
+    }
 
     public String getHash(String password) {
 
@@ -28,6 +40,39 @@ public class Cracker {
             e.printStackTrace();
         }
         return "";
+    }
+
+    public byte[] getHashBytes(Character ... characters) {
+
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA");
+            return md.digest(new String(convertToChars(characters)).getBytes());
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        }
+    }
+
+    private char[] convertToChars(Character[] characters) {
+        char[] chars = new char[characters.length];
+        for (int i = 0; i < characters.length; ++i) {
+            chars[i] = characters[i].charValue();
+        }
+        return chars;
+    }
+
+    public void crackPass(String hexStr) throws InterruptedException {
+        byte[] passHash = hexToArray(hexStr);
+        ExecutorService e = Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors()
+        );
+
+        int step = CHARS.size() / CRACKER_THREADS;
+        for (int i = 0; i < CRACKER_THREADS; ++i) // create and start threads
+            e.execute(new CrackerWorker(i * step, (i + 1) * step, passHash));
+
+        endGate.await();
+        System.out.println("all done");
     }
 
     /*
@@ -58,6 +103,36 @@ public class Cracker {
             result[i/2] = (byte) Integer.parseInt(hex.substring(i, i+2), 16);
         }
         return result;
+    }
+
+    private class CrackerWorker implements Runnable {
+
+        private final List<Character> chars;
+        private final byte[] passHash;
+
+        public CrackerWorker(Integer fromIndex, Integer toIndex, byte[] passHash) {
+            chars = CHARS.subList(fromIndex, toIndex);
+            this.passHash = passHash;
+        }
+
+        public void run() {
+            crackPassword();
+            endGate.countDown();
+        }
+
+        public void crackPassword() {
+            while (true) {
+                for (Character ch: chars) {
+                    for (Character ch2: CHARS) {
+                        if (Arrays.equals(getHashBytes(ch, ch2), passHash)) {
+                            System.out.println(ch + "" + ch2);
+                            endGate.countDown();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // possible test values:
