@@ -31,13 +31,22 @@ public class BlockingQueueDemo {
         for (int i = 1; i <= SEARCH_THREADS; i++) {
             Runnable searcher = () -> {
                 try {
-                    boolean done = false;
-                    while (!done) {
+//                    boolean done = false;
+//                    while (!done) {
+//                        File file = queue.take();
+//                        if (file == DUMMY) {
+//                            queue.put(file);
+//                            done = true;
+//                        } else search(file, keyword);
+//                    }
+                    while (true) {
                         File file = queue.take();
                         if (file == DUMMY) {
                             queue.put(file);
-                            done = true;
-                        } else search(file, keyword);
+                            break;
+                        } else {
+                            search(file, keyword);
+                        }
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

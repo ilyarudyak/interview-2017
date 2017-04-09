@@ -1,7 +1,5 @@
 package cs108.hash_cracker;
 
-import org.omg.PortableServer.THREAD_POLICY_ID;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -63,14 +61,15 @@ public class Cracker {
 
     public void crackPass(String hexStr) throws InterruptedException {
         byte[] passHash = hexToArray(hexStr);
-        ExecutorService e = Executors.newFixedThreadPool(
+        ExecutorService executor = Executors.newFixedThreadPool(
                 Runtime.getRuntime().availableProcessors()
         );
 
         int step = CHARS.size() / CRACKER_THREADS;
         for (int i = 0; i < CRACKER_THREADS; ++i) // create and start threads
-            e.execute(new CrackerWorker(i * step, (i + 1) * step, passHash));
+            executor.execute(new CrackerWorker(i * step, (i + 1) * step, passHash));
 
+        executor.shutdown();
         endGate.await();
         System.out.println("all done");
     }
